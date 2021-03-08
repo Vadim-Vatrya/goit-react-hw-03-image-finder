@@ -1,16 +1,16 @@
 import PropTypes from 'prop-types';
-import s from './Button.module.css';
+import styles from './Button.module.css';
 
-const Button = ({ onClick }) => {
+const Button = ({ uploadMorePhotos }) => {
   return (
-    <button className={s.Button} type="button" onClick={onClick}>
+    <button className={styles.Button} type="button" onClick={() => uploadMorePhotos()}>
       Load more
     </button>
   );
 };
 
 Button.propTypes = {
-  onClick: PropTypes.func.isRequired,
+  uploadMorePhotos: PropTypes.func.isRequired,
 };
 
 export default Button;

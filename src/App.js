@@ -1,59 +1,60 @@
 import { Component } from 'react';
-import LoaderPage from './components/Loader/Loader';
-import Searchbar from './components/Searchbar/SearchBar';
-import ImageGallery from './components/ImageGallery/ImageGallery';
-import fetchPictures from './services/pictures-api';
-import Button from './components/Button/Button';
-import Modal from './components/Modal/Modal';
-import s from './App.module.css';
 
-export default class App extends Component {
+
+import fetchImages from './services/imageApi';
+import Searchbar from './components/Searchbar';
+import ImageGallery from './components/ImageGallery';
+import Button from './components/Button';
+import LoaderPage from './components/Loader';
+import Modal from './components/Modal';
+
+import styles from './App.module.css';
+
+
+class App extends Component {
   state = {
-    pictures: [],
+    search: '',
     page: 1,
-    searchQuery: '',
+    imgArray: [],
     isLoading: false,
-    error: null,
     showModal: false,
     largeImageURL: '',
+    error: null,
   };
 
-  componentDidUpdate(prevProps, prevState) {
-    
-    const { searchQuery, page } = this.state;
+  onSubmitForm = async data => {
+    this.setState({ search: data, page: 1, isLoading: true, error: null });
 
-    if (prevState.searchQuery !== searchQuery) {
-      this.setState({ page: 1 });
-      this.fetchPictures();
+    try {
+      const request = await fetchImages(data);
+      this.setState(({ page }) => ({ imgArray: [...request], page: page + 1 }));
+      this.scrollImg();
+    } catch (error) {
+      this.setState({ error });
+    } finally {
+      this.setState({ isLoading: false });
     }
-
-    if (prevState.page !== page) {
-      this.scrollToNextPage();
-      
-    }
-  }
-
-  handleSearchBarSubmit = query => {
-    this.setState({ searchQuery: query, page: 1, error: null, pictures: [], });
   };
 
-  fetchPictures = () => {
-    const { page, searchQuery } = this.state;
-
+  uploadMorePhotos = async () => {
+    const { search, page } = this.state;
     this.setState({ isLoading: true });
 
-    fetchPictures({ page, searchQuery })
-      .then(hits => {
-        this.setState(prevState => ({
-          pictures: [...prevState.pictures, ...hits],
-          page: prevState.page + 1,
-        }));
-      })
-      .catch(error => this.setState({ error }))
-      .finally(() => this.setState({ isLoading: false }));
+    try {
+      const request = await fetchImages(search, page);
+      this.setState(({ imgArray, page }) => ({
+        imgArray: [...imgArray, ...request],
+        page: page + 1,
+      }));
+      this.scrollImg();
+    } catch (error) {
+      this.setState({ error });
+    } finally {
+      this.setState({ isLoading: false });
+    }
   };
 
-  scrollToNextPage = () => {
+  scrollImg = () => {
     window.scrollTo({
       top: document.documentElement.scrollHeight,
       behavior: 'smooth',
@@ -61,9 +62,7 @@ export default class App extends Component {
   };
 
   toggleModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
+    this.setState(({ showModal }) => ({ showModal: !showModal }));
   };
 
   onClickImage = largeImageURL => {
@@ -73,41 +72,46 @@ export default class App extends Component {
 
   render() {
     const {
-      searchQuery,
-      pictures,
+      imgArray,
       isLoading,
-      error,
       showModal,
       largeImageURL,
+      error,
+      search,
     } = this.state;
-
-    const shouldRenderButton = pictures.length > 0  && !isLoading;
-    const picIsNotFound =
-      searchQuery && pictures.length === 0 && !error && !isLoading;
+    const imgFound = imgArray.length > 0 && !error;
+    const imgNotFound = search && imgArray.length === 0 && !error && !isLoading;
 
     return (
-      <div className={s.App}>
-        {error && <p className={s.error}>Something went wrong. Try again</p>}
-        <Searchbar onSubmit={this.handleSearchBarSubmit} />
-
-        {isLoading && <LoaderPage />}
-
-        {showModal && (
-          <Modal largeImageURL={largeImageURL} toggleModal={this.toggleModal} />
+      <div className={styles.App}>
+        <Searchbar onSubmitForm={this.onSubmitForm} />
+        {error && (
+          <p className={styles.error}>Whoops, something went wrong. Try again.</p>
         )}
-
-        { shouldRenderButton && (
-          <ImageGallery pictures={pictures} onClickImage={this.onClickImage} />
+        {imgFound && (
+          <>
+            <ImageGallery
+              onClickImage={this.onClickImage}
+              imgArray={imgArray}
+            />
+            {!isLoading && <Button uploadMorePhotos={this.uploadMorePhotos} />}
+            {isLoading && <LoaderPage />}
+            {showModal && (
+              <Modal
+                largeImageURL={largeImageURL}
+                toggleModal={this.toggleModal}
+              />
+            )}
+          </>
         )}
-
-        {shouldRenderButton && <Button onClick={this.fetchPictures} />}
-
-        {picIsNotFound && (
-          <p className={s.error}>Nothing were found. Enter another query</p>
+        {imgNotFound && (
+          <p className={styles.error}>
+            No results were found for your search. Try again.
+          </p>
         )}
-
-       
       </div>
     );
   }
 }
+
+export default App;

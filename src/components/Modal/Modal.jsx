@@ -1,11 +1,14 @@
 import { Component } from 'react';
-import s from './Modal.module.css';
 import { createPortal } from 'react-dom';
 import PropTypes from 'prop-types';
+
+import styles from './Modal.module.css';
+
 
 const modalRoot = document.querySelector('#modal-root');
 
 export default class Modal extends Component {
+  
   componentDidMount() {
     window.addEventListener('keydown', this.handleKeyDown);
   }
@@ -14,23 +17,23 @@ export default class Modal extends Component {
     window.removeEventListener('keydown', this.handleKeyDown);
   }
 
-  handleKeyDown = event => {
-    if (event.code === 'Escape') {
+  handleKeyDown = e => {
+    if (e.code === 'Escape') {
       this.props.toggleModal();
     }
   };
 
-  handleOverlayClick = event => {
-    if (event.currentTarget === event.target) {
-      this.props.toggleModal();
-    }
+  closeByBackdrop = ({ target, currentTarget }) => {
+    if (target === currentTarget) this.props.toggleModal();
   };
 
   render() {
+    const { largeImageURL } = this.props;
+
     return createPortal(
-      <div className={s.Overlay} onClick={this.handleOverlayClick}>
-        <div className={s.Modal}>
-          <img className={s.modalPic} src={this.props.largeImageURL} alt="" />
+      <div className={styles.Overlay} onClick={this.closeByBackdrop}>
+        <div className={styles.Modal}>
+          <img className={styles.modalPic} src={largeImageURL} alt="" />
         </div>
       </div>,
       modalRoot,
